@@ -1,0 +1,69 @@
+version: '3.1'
+services:
+  dbservice:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: new_test_micro1
+    volumes:
+      - postgres-db:/data/postgres
+    ports:
+      - "5438:5432"
+    networks:
+      - usernet
+
+  userservice:
+    build: /home/lnv-0033/IdeaProjects/microservice-with-security/user-service
+    depends_on:
+      - dbservice
+    environment:
+      - spring.datasource.url=jdbc:postgresql://dbservice:5432/new_test_micro1
+      - spring.datasource.username=postgres
+      - spring.datasource.password=root
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+      - eureka.client.service-url.defaultZone=http://serviceregistry:8761/eureka/
+    ports:
+      - "8095:8080"
+    networks:
+      - usernet
+
+  patientservice:
+    build: /home/lnv-0033/IdeaProjects/microservice-with-security/patient-service
+    depends_on:
+      - dbservice
+    environment:
+      - spring.datasource.url=jdbc:postgresql://dbservice:5432/new_test_micro1
+      - spring.datasource.username=postgres
+      - spring.datasource.password=root
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+      - eureka.client.service-url.defaultZone=http://serviceregistry:8761/eureka/
+    ports:
+      - "8096:8081"
+    networks:
+      - usernet
+
+  serviceregistry:
+    build: /home/lnv-0033/IdeaProjects/microservice-with-security/service-registry
+    ports:
+      - "8764:8761"
+    networks:
+      - usernet
+
+  apigateway:
+    build: /home/lnv-0033/IdeaProjects/microservice-with-security/api-gateway
+    depends_on:
+      - serviceregistry
+    environment:
+      - eureka.client.service-url.defaultZone=http://serviceregistry:8761/eureka/
+    ports:
+        - "8089:8765"
+    networks:
+      - usernet
+
+networks:
+  usernet:
+
+volumes:
+  postgres-db:
+    driver: local
